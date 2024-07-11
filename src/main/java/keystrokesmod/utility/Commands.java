@@ -8,7 +8,6 @@ import keystrokesmod.module.impl.client.Settings;
 import keystrokesmod.module.impl.combat.Velocity;
 import keystrokesmod.module.impl.minigames.DuelsStats;
 import keystrokesmod.module.impl.movement.Fly;
-import keystrokesmod.module.impl.movement.Speed;
 import keystrokesmod.module.impl.other.FakeChat;
 import keystrokesmod.module.impl.other.NameHider;
 import keystrokesmod.module.impl.render.HUD;
@@ -16,7 +15,6 @@ import keystrokesmod.utility.font.Font;
 import keystrokesmod.utility.profile.Profile;
 import keystrokesmod.utility.render.RenderUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.network.play.client.C01PacketChatMessage;
 import org.jetbrains.annotations.NotNull;
@@ -92,12 +90,13 @@ public class Commands {
                     return;
                 }
 
-                if (args.size() != 2) {
-                    print(invSyn, 1);
-                    return;
+                NameHider.n = args.get(1).replace("&", "§");
+
+                for (int i = 2; i < args.size(); i++) {
+                    NameHider.n += " "+args.get(i).replace("&", "§");
                 }
 
-                NameHider.n = args.get(1);
+
                 print("&a" + Utils.uf("name") + "Nick has been set to:".substring(4), 1);
                 print("\"" + NameHider.n + "\"", 0);
             } else if (args.get(0).equals(FakeChat.command)) {
@@ -317,20 +316,11 @@ public class Commands {
 
                 print("&aSet BName to " + HUD.bName, 1);
             } else if (args.get(0).equals("binds")) {
-                StringBuilder result = new StringBuilder(ChatFormatting.BOLD + "Binds:" + ChatFormatting.RESET + '\n');
-
                 for (Module module : Raven.getModuleManager().getModules()) {
                     if (module.getKeycode() != 0) {
-                        if (result.length() > 0)
-                            result.append('\n');
-                        result.append(ChatFormatting.AQUA)
-                                .append(module.getName())
-                                .append(": ")
-                                .append(Keyboard.getKeyName(module.getKeycode()));
+                        print(ChatFormatting.AQUA + module.getName() + ": " + Keyboard.getKeyName(module.getKeycode()), 1);
                     }
                 }
-
-                print(result.toString(), 1);
             } else if (args.get(0).equals("bind")) {
                 if (!hasArgs) {
                     print(invSyn, 1);

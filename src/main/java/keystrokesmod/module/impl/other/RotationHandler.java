@@ -3,6 +3,7 @@ package keystrokesmod.module.impl.other;
 import keystrokesmod.event.MoveInputEvent;
 import keystrokesmod.event.RotationEvent;
 import keystrokesmod.module.Module;
+import keystrokesmod.module.impl.world.Scaffold;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.DescriptionSetting;
 import keystrokesmod.module.setting.impl.ModeSetting;
@@ -83,24 +84,24 @@ public final class RotationHandler extends Module {
      * Fix movement
      * @param event before update living entity (move)
      */
-    @SubscribeEvent(priority = EventPriority.LOWEST)
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onPreMotion(MoveInputEvent event) {
         if (isSet) {
             lastRotationYaw = rotationYaw;
             lastRotationPitch = rotationPitch;
             switch ((int) smoothBack.getInput()) {
                 case 0:
-                    rotationYaw = RotationUtils.normalize(mc.thePlayer.rotationYaw);
+                    rotationYaw = mc.thePlayer.rotationYaw;
                     rotationPitch = mc.thePlayer.rotationPitch;
                     break;
                 case 1:
-                    rotationYaw = AimSimulator.rotMove(RotationUtils.normalize(mc.thePlayer.rotationYaw), getRotationYaw(), (float) aimSpeed.getInput());
+                    rotationYaw = AimSimulator.rotMove(mc.thePlayer.rotationYaw, getRotationYaw(), (float) aimSpeed.getInput());
                     rotationPitch = AimSimulator.rotMove(mc.thePlayer.rotationPitch, getRotationPitch(), (float) aimSpeed.getInput());
                     break;
             }
         }
 
-        if (getRotationYaw() == RotationUtils.normalize(mc.thePlayer.rotationYaw)) rotationYaw = null;
+        if (AimSimulator.yawEquals(getRotationYaw(), mc.thePlayer.rotationYaw)) rotationYaw = null;
         if (getRotationPitch() == mc.thePlayer.rotationPitch) rotationPitch = null;
 
         RotationEvent rotationEvent = new RotationEvent(getRotationYaw(), getRotationPitch());

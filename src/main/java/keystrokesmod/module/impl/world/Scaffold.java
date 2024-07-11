@@ -1,12 +1,10 @@
 package keystrokesmod.module.impl.world;
 
 import keystrokesmod.Raven;
-import keystrokesmod.event.JumpEvent;
-import keystrokesmod.event.PreMotionEvent;
-import keystrokesmod.event.PreUpdateEvent;
-import keystrokesmod.event.RotationEvent;
+import keystrokesmod.event.*;
 import keystrokesmod.mixins.impl.client.KeyBindingAccessor;
 import keystrokesmod.module.Module;
+import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.impl.other.RotationHandler;
 import keystrokesmod.module.impl.other.SlotHandler;
 import keystrokesmod.module.impl.render.HUD;
@@ -42,6 +40,8 @@ public class Scaffold extends Module { // from b4 :)
     private final SliderSetting aimSpeed;
     private final SliderSetting motion;
     private final ModeSetting rotation;
+    private final SliderSetting tellyStartTick;
+    private final SliderSetting tellyStopTick;
     private final SliderSetting strafe;
     private final ModeSetting fastScaffold;
     private final ButtonSetting cancelSprint;
@@ -64,8 +64,8 @@ public class Scaffold extends Module { // from b4 :)
 
     protected MovingObjectPosition placeBlock;
     private int lastSlot;
-    private static final String[] rotationModes = new String[]{"None", "Backwards", "Strict", "Precise", "Telly"};
-    private static final String[] fastScaffoldModes = new String[]{"Disabled", "Sprint", "Edge", "Jump A", "Jump B", "Jump C", "Float", "Side", "Legit", "Auto Jump"};
+    private static final String[] rotationModes = new String[]{"None", "Backwards", "Strict", "Precise", "Telly", "Constant", "Snap"};
+    private static final String[] fastScaffoldModes = new String[]{"Disabled", "Sprint", "Edge", "Jump A", "Jump B", "Jump C", "Float", "Side", "Legit", "Auto Jump", "GrimAC", "Sneak"};
     private static final String[] precisionModes = new String[]{"Very low", "Low", "Moderate", "High", "Very high"};
     public float placeYaw;
     public float placePitch;
@@ -89,10 +89,12 @@ public class Scaffold extends Module { // from b4 :)
         this.registerSetting(aimSpeed = new SliderSetting("Aim speed", 20, 5, 20, 0.1));
         this.registerSetting(motion = new SliderSetting("Motion", 1.0, 0.5, 1.2, 0.01));
         this.registerSetting(rotation = new ModeSetting("Rotation", rotationModes, 1));
+        this.registerSetting(tellyStartTick = new SliderSetting("Telly start", 3, 0, 11, 1, "tick", new ModeOnly(rotation, 4)));
+        this.registerSetting(tellyStopTick = new SliderSetting("Telly stop", 8, 0, 11, 1, "tick", new ModeOnly(rotation, 4)));
         this.registerSetting(strafe = new SliderSetting("Strafe", 0, -45, 45, 5));
         this.registerSetting(fastScaffold = new ModeSetting("Fast scaffold", fastScaffoldModes, 0));
         this.registerSetting(precision = new ModeSetting("Precision", precisionModes, 4));
-        this.registerSetting(cancelSprint = new ButtonSetting("Cancel sprint", false, new ModeOnly(fastScaffold, 0, 9).reserve()));
+        this.registerSetting(cancelSprint = new ButtonSetting("Cancel sprint", false, new ModeOnly(fastScaffold, 0).reserve()));
         this.registerSetting(rayCast = new ButtonSetting("Ray cast", false));
         this.registerSetting(sneak = new ButtonSetting("Sneak", false));
         this.registerSetting(sneakEveryBlocks = new SliderSetting("Sneak every blocks", 1, 1, 10, 1, sneak::isToggled));
@@ -107,7 +109,7 @@ public class Scaffold extends Module { // from b4 :)
         this.registerSetting(silentSwing = new ButtonSetting("Silent swing", false));
         this.registerSetting(tower = new ButtonSetting("Tower", false));
         this.registerSetting(fast = new ButtonSetting("Fast", false));
-        this.registerSetting(sameY = new ButtonSetting("SameY", false, new ModeOnly(fastScaffold, 9).reserve()));
+        this.registerSetting(sameY = new ButtonSetting("SameY", false));
     }
 
     public void onDisable() {
@@ -150,7 +152,7 @@ public class Scaffold extends Module { // from b4 :)
                 pitch = 85;
                 break;
             case 2:
-                if (!forceStrict) {
+                if (!forceStrict && MoveUtil.isMoving()) {
                     yaw = getYaw() + (float) strafe.getInput();
                     pitch = 85;
                     break;
@@ -160,7 +162,7 @@ public class Scaffold extends Module { // from b4 :)
                 pitch = placePitch;
                 break;
             case 4:
-                if (offGroundTicks >= 3 && offGroundTicks < 8 && placeBlock != null && MoveUtil.isMoving()) {
+                if (offGroundTicks >= tellyStartTick.getInput() && offGroundTicks < tellyStopTick.getInput() && placeBlock != null && MoveUtil.isMoving() && !Utils.jumpDown()) {
                     telly$noBlockPlace = true;
                     yaw = event.getYaw();
                     pitch = event.getPitch();
@@ -169,6 +171,23 @@ public class Scaffold extends Module { // from b4 :)
                     pitch = placePitch;
                     telly$noBlockPlace = false;
                 }
+                break;
+            case 5:
+                yaw = getYaw();
+                pitch = placePitch;
+                break;
+            case 6:
+                if (MoveUtil.isMoving()) {
+                    mc.thePlayer.setSprinting(true);
+                }
+                if (!MoveUtil.isMoving()) {
+                    yaw = placeYaw;
+                } else if (place) {
+                    yaw = forceStrict ? placeYaw : getYaw();
+                } else {
+                    yaw = (float) (event.getYaw() + (Math.random() - 0.5) * 0.940004);
+                }
+                pitch = placePitch;
                 break;
         }
         boolean instant = aimSpeed.getInput() == aimSpeed.getMax();
@@ -180,14 +199,30 @@ public class Scaffold extends Module { // from b4 :)
 
     @SubscribeEvent
     public void onPreMotion(PreMotionEvent event) {
-        if (cancelSprint.isToggled() || fastScaffold.getInput() == 9) {
+        if (cancelSprint.isToggled()) {
             event.setSprinting(false);
+        }
+
+        if (fastScaffold.getInput() == 10) {
+            if (Math.abs(MathHelper.wrapAngleTo180_float(mc.thePlayer.rotationYaw) -
+                    MathHelper.wrapAngleTo180_float(RotationHandler.getRotationYaw())) > 100) {
+                ((KeyBindingAccessor) mc.gameSettings.keyBindSprint).setPressed(false);
+                mc.thePlayer.setSprinting(false);
+            }
         }
     }
 
     @SubscribeEvent
     public void onJump(JumpEvent e) {
         delay = true;
+    }
+
+    @SubscribeEvent
+    public void onMoveInput(@NotNull MoveInputEvent event) {
+        if (fastScaffold.getInput() == 11) {
+            event.setSneak(true);
+            event.setSneakSlowDownMultiplier(1);
+        }
     }
 
     @SubscribeEvent
@@ -222,7 +257,7 @@ public class Scaffold extends Module { // from b4 :)
             for (BlockPos pos : possible) {
                 if (!BlockUtils.replaceable(pos)) continue;
 
-                Optional<Triple<BlockPos, EnumFacing, keystrokesmod.script.classes.Vec3>> placeSide = BlockIn.getPlaceSide(pos);
+                Optional<Triple<BlockPos, EnumFacing, keystrokesmod.script.classes.Vec3>> placeSide = RotationUtils.getPlaceSide(pos);
                 if (!placeSide.isPresent()) continue;
 
                 place(new MovingObjectPosition(MovingObjectPosition.MovingObjectType.BLOCK,
@@ -234,7 +269,6 @@ public class Scaffold extends Module { // from b4 :)
                 break;
             }
         }
-
 
         if (delay && delayOnJump.isToggled()) {
             delay = false;
@@ -507,11 +541,16 @@ public class Scaffold extends Module { // from b4 :)
         }
     }
 
-    public boolean sprint() {
-        if (this.isEnabled() && fastScaffold.getInput() > 0 && placeBlock != null && (!fastOnRMB.isToggled() || Mouse.isButtonDown(1))) {
-            switch ((int) fastScaffold.getInput()) {
+    public static boolean sprint() {
+        if (ModuleManager.scaffold.isEnabled()
+                && ModuleManager.scaffold.fastScaffold.getInput() > 0
+                && ModuleManager.scaffold.placeBlock != null
+                && (!ModuleManager.scaffold.fastOnRMB.isToggled() || Mouse.isButtonDown(1))) {
+            switch ((int) ModuleManager.scaffold.fastScaffold.getInput()) {
                 case 1:
                 case 7:
+                case 10:
+                case 11:
                     return true;
                 case 2:
                     return Utils.onEdge();
@@ -519,7 +558,7 @@ public class Scaffold extends Module { // from b4 :)
                 case 4:
                 case 5:
                 case 6:
-                    return keepYPosition();
+                    return ModuleManager.scaffold.keepYPosition();
                 case 8:
                     return Math.abs(MathHelper.wrapAngleTo180_float(mc.thePlayer.rotationYaw) - MathHelper.wrapAngleTo180_float(RotationHandler.getRotationYaw())) <= 45;
             }
@@ -641,9 +680,8 @@ public class Scaffold extends Module { // from b4 :)
         }
 
         if (rayCast.isToggled()) {
-            MovingObjectPosition hitResult = RotationUtils.rayCast(4.5, RotationHandler.getRotationYaw(), RotationHandler.getRotationPitch());
-            if (hitResult == null) return;
-            if (hitResult.getBlockPos().equals(block.getBlockPos())) {
+            MovingObjectPosition hitResult = RotationUtils.rayCast(4.5, placeYaw, placePitch);
+            if (hitResult != null && hitResult.getBlockPos().equals(block.getBlockPos())) {
                 block.hitVec = hitResult.hitVec;
             } else {
                 return;
@@ -665,7 +703,7 @@ public class Scaffold extends Module { // from b4 :)
         }
     }
 
-    private int getSlot() {
+    public static int getSlot() {
         int slot = -1;
         int highestStack = -1;
         for (int i = 0; i < 9; ++i) {

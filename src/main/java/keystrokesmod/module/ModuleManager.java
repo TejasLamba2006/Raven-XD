@@ -214,7 +214,6 @@ public class ModuleManager {
         this.addModule(staffDetector = new StaffDetector());
         this.addModule(new AutoWeapon());
         this.addModule(autoRespawn = new AutoRespawn());
-      	this.addModule(autoRespawn = new AutoRespawn());
         this.addModule(leftClicker = new LeftClicker());
         this.addModule(new RightClicker());
         antiBot.enable();

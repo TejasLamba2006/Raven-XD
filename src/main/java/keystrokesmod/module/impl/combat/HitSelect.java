@@ -39,7 +39,7 @@ public class HitSelect extends Module {
         return MODES[(int) mode.getInput()];
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onAttack(@NotNull AttackEntityEvent event) {
         if (mode.getInput() == 1 && !currentShouldAttack && (!smart.isToggled()
                 || !(event.target instanceof EntityLivingBase)

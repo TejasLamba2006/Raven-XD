@@ -655,8 +655,8 @@ public static List<String> getSidebarLines() {
     }
 
     public static boolean ilc() {
-        if (ModuleManager.autoClicker.isEnabled()) {
-            return AutoClicker.leftClick.isToggled() && Mouse.isButtonDown(0);
+        if (ModuleManager.leftClicker.isEnabled()) {
+            return Mouse.isButtonDown(0);
         } else return CPSCalculator.f() > 1 && System.currentTimeMillis() - CPSCalculator.LL < 300L;
     }
     public static boolean tryingToCombo() {
@@ -838,7 +838,7 @@ public static List<String> getSidebarLines() {
             return false;
         }
         Item getItem = mc.thePlayer.getHeldItem().getItem();
-        return (Settings.weaponSword.isToggled() || getItem instanceof ItemSword) || (Settings.weaponAxe.isToggled() && getItem instanceof ItemAxe) || (Settings.weaponRod.isToggled() && getItem instanceof ItemFishingRod) || (Settings.weaponStick.isToggled() && getItem == Items.stick);
+        return (!Settings.weaponSword.isToggled() || getItem instanceof ItemSword) || (Settings.weaponAxe.isToggled() && getItem instanceof ItemAxe) || (Settings.weaponRod.isToggled() && getItem instanceof ItemFishingRod) || (Settings.weaponStick.isToggled() && getItem == Items.stick);
     }
 
     public static boolean holdingSword() {

@@ -1,6 +1,5 @@
 package keystrokesmod.module;
 
-import keystrokesmod.module.impl.client.CommandLine;
 import keystrokesmod.module.impl.client.*;
 import keystrokesmod.module.impl.combat.*;
 import keystrokesmod.module.impl.fun.*;
@@ -33,7 +32,7 @@ public class ModuleManager {
     public static Module antiBot;
     public static Module noSlow;
     public static KillAura killAura;
-    public static AutoClicker autoClicker;
+    //public static AutoClicker autoClicker;
     public static HitBox hitBox;
     public static Reach reach;
     public static BedESP bedESP;
@@ -92,9 +91,10 @@ public class ModuleManager {
     public static StaffDetector staffDetector;
     public static AutoRespawn autoRespawn;
     public static Clutch clutch;
+    public static LeftClicker leftClicker;
     
     public void register() {
-        this.addModule(autoClicker = new AutoClicker());
+        //this.addModule(autoClicker = new AutoClicker());
         this.addModule(longJump = new LongJump());
         this.addModule(new AimAssist());
         this.addModule(blink = new Blink());
@@ -214,6 +214,9 @@ public class ModuleManager {
         this.addModule(staffDetector = new StaffDetector());
         this.addModule(new AutoWeapon());
         this.addModule(autoRespawn = new AutoRespawn());
+      	this.addModule(autoRespawn = new AutoRespawn());
+        this.addModule(leftClicker = new LeftClicker());
+        this.addModule(new RightClicker());
         antiBot.enable();
         commandChat.enable();
         modules.sort(Comparator.comparing(Module::getPrettyName));
